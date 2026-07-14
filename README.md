@@ -4,6 +4,26 @@ Open Occupation Blueprint for **ISCO-08 3311**: Securities and Finance Dealers a
 
 This repository designs a forkable OSS business for an independent securities brokerage practice: a secure document-handling and archival robot manages trade confirmations and disclosures under a governor-gated actor, so the practice keeps its own brokerage records instead of renting a closed brokerage-platform SaaS.
 
+**Maturity: `:implemented`.** `src/brokerage/` implements the
+`SecuritiesBrokerageActor` as a `langgraph.graph/state-graph`
+(`brokerage.actor`) wired to a `Brokerage Advisor` (`brokerage.advisor`)
+and an independent `SecuritiesBrokerageGovernor` (`brokerage.governor`),
+following the itonami actor pattern (ADR-2607011000): `:intake -> :advise
+-> :govern -> :decide -+-> :commit (:ok?) +-> :request-approval (:escalate?,
+human-in-the-loop interrupt) +-> :hold (:hard?)`. 14 tests / 29 assertions
+green (`clojure -M:test`). HARD invariants (always hold, never
+overridable): client provenance, no-actuation (`:effect` must be
+`:propose`), a registered account basis for any order proposal, the
+proposed order size not exceeding the account's registered order-size
+ceiling (executing an order beyond the client's registered limit is
+unauthorized trading, not active management), and a completed
+suitability review before any order can be accepted (accepting an
+order without a completed suitability review is unsuitable execution,
+not efficient service). Always-escalate ops (human sign-off regardless
+of confidence, mapping this repo's Trust Controls in
+[`docs/business-model.md`](docs/business-model.md)):
+`:approve-over-limit-trade` and `:approve-margin-call-liquidation`.
+
 ## Robotics premise
 
 All cloud-itonami verticals are designed on the premise that a **robot performs
